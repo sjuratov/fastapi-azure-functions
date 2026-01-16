@@ -44,6 +44,11 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+# Pytest
+.pytest_cache/
+htmlcov/
+.coverage
+
 # Azurite artifacts
 __blobstorage__
 __queuestorage__

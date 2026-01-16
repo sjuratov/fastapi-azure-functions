@@ -10,3 +10,15 @@ dependencies = [
     "pydantic>=2.12.5",
     "uvicorn>=0.40.0",
 ]
+
+[dependency-groups]
+dev = [
+    "httpx>=0.28.1",
+    "pytest>=9.0.2",
+]
+
+[tool.pytest.ini_options]
+markers = [
+    "integration: Integration tests requiring Azure Functions runtime (run with: pytest -m integration)",
+]
+testpaths = ["tests"]

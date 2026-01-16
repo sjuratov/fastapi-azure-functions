@@ -1,0 +1,40 @@
+# Deployment scripts
+scripts/
+deploy-azure.ps1
+deploy-azure.sh
+
+# Tests
+tests/
+pytest.ini
+.pytest_cache/
+
+# Documentation
+docs/
+*.md
+test.http
+
+# Development files
+.env
+.env.example
+.vscode/
+.idea/
+
+# Git
+.git/
+.gitignore
+.funcignore
+
+# Python development
+.mypy_cache/
+.ruff_cache/
+*.pyc
+__pycache__/
+
+# CI/CD
+.github/
+.azure-pipelines/
+
+# Build artifacts
+dist/
+build/
+*.egg-info/
