@@ -8,7 +8,7 @@ app = func.FunctionApp()
 # Create ASGI middleware to connect Azure Function -> FastAPI
 asgi_middleware = AsgiMiddleware(fastapi_app)
 
-@app.route(route="{*routes}", auth_level=func.AuthLevel.ANONYMOUS)
+@app.route(route="{*route}", auth_level=func.AuthLevel.ANONYMOUS)
 async def fastapi_handler(req: func.HttpRequest) -> func.HttpResponse:
     """Proxy all HTTP traffic to FastAPI."""
     response = await asgi_middleware.handle_async(req)
