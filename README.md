@@ -1,8 +1,11 @@
 # FastAPI on Azure Functions
 
-This project demonstrates how to run a FastAPI application on Azure Functions with secure, keyless authentication using managed identities.
+This project demonstrates how to run a FastAPI application on Azure Functions
+with secure, keyless authentication using managed identities.
 
-Based on: [Building your first serverless HTTP API on Azure with Azure Functions + FastAPI](https://devblogs.microsoft.com/cosmosdb/building-your-first-serverless-http-api-on-azure-with-azure-functions-fastapi/)
+Based on:
+[Building your first serverless HTTP API on Azure with Azure Functions +
+FastAPI](<https://devblogs.microsoft.com/cosmosdb/building-your-first-serverless-http-api-on-azure-with-azure-functions-fastapi/>)
 
 ## Prerequisites
 
@@ -13,7 +16,7 @@ Based on: [Building your first serverless HTTP API on Azure with Azure Functions
 
 ## Project Structure
 
-```
+```text
 fastapi-azure-functions/
 ├── app/                     # Main application package
 │   ├── main.py             # FastAPI app initialization
@@ -38,25 +41,29 @@ fastapi-azure-functions/
 └── test.http               # HTTP request samples
 ```
 
-The `.funcignore` file ensures that only runtime code is deployed to Azure (excludes tests, scripts, and documentation).
+The `.funcignore` file ensures that only runtime code is deployed to Azure
+(excludes tests, scripts, and documentation).
 
 ## Local Development
 
 1. Install dependencies:
+
    ```bash
    uv sync
    ```
 
 2. Run locally:
+
    ```bash
    func start
    ```
 
 3. Test endpoints using `test.http` or visit:
-   - API: http://localhost:7071/api/omy
-   - Swagger UI: http://localhost:7071/api/docs
+   - API: <http://localhost:7071/api/omy>
+   - Swagger UI: <http://localhost:7071/api/docs>
 
 4. Run tests:
+
    ```bash
    pytest
    ```
@@ -68,24 +75,29 @@ The `.funcignore` file ensures that only runtime code is deployed to Azure (excl
 Use the provided deployment scripts to provision all Azure resources with managed identity.
 
 **Before running the scripts**, update the configuration variables at the top of the script:
+
 - `ResourceGroup` / `RESOURCE_GROUP` - Your Azure resource group name
-- `Location` / `LOCATION` - Azure region (e.g., swedencentral, eastus, westeurope)
-- `StorageAccountName` / `STORAGE_ACCOUNT_NAME` - Storage account name (3-24 chars, lowercase/numbers only, globally unique)
+- `Location` / `LOCATION` - Azure region (swedencentral, eastus, westeurope)
+- `StorageAccountName` / `STORAGE_ACCOUNT_NAME` - Storage account name
+  (3-24 chars, lowercase/numbers only, globally unique)
 - `IdentityName` / `IDENTITY_NAME` - Managed identity name
 - `FunctionAppName` / `FUNCTION_APP_NAME` - Function app name (globally unique)
 
 **PowerShell:**
+
 ```powershell
 .\scripts\deploy-azure.ps1
 ```
 
 **Bash/Linux/macOS:**
+
 ```bash
 chmod +x scripts/deploy-azure.sh
 ./scripts/deploy-azure.sh
 ```
 
 After the infrastructure is deployed, deploy your code:
+
 ```bash
 func azure functionapp publish <FUNCTION_APP_NAME>
 ```
@@ -93,6 +105,7 @@ func azure functionapp publish <FUNCTION_APP_NAME>
 ### What Gets Deployed
 
 The deployment scripts create:
+
 - **Azure Function App** (Flex Consumption Plan)
 - **User-Assigned Managed Identity** (for keyless authentication)
 - **Storage Account** (for Function App state)
@@ -104,19 +117,24 @@ The deployment scripts create:
 #### 1. Flex Consumption Plan vs Regular Consumption Plan
 
 We use the **Flex Consumption plan** because:
-- Supports managed identity authentication during creation via `--deployment-storage-auth-type UserAssignedIdentity`
+
+- Supports managed identity authentication during creation via
+  `--deployment-storage-auth-type UserAssignedIdentity`
 - Works with storage accounts that have shared key access disabled
-- Regular consumption plan requires shared keys during creation, then conversion to managed identity
+- Regular consumption plan requires shared keys during creation,
+  then conversion to managed identity
 
 #### 2. User-Assigned Managed Identity
 
 Benefits:
+
 - No connection strings or secrets stored in configuration
 - Automatic credential rotation by Azure
 - Complies with security policies that disable shared key access
 - Single identity can be assigned to multiple resources
 
 Required role assignments:
+
 - **Storage Blob Data Owner** on the storage account (for Function App operations)
 - **Monitoring Metrics Publisher** on Application Insights (for telemetry)
 
@@ -150,13 +168,15 @@ Required role assignments:
 The project includes two types of automated tests:
 
 #### Unit Tests (`tests/test_api.py`)
+
 **Fast, isolated tests of FastAPI application logic.**
 
 - Tests FastAPI routes directly using `TestClient`
 - No Azure Functions runtime required
 - Runs in-memory without HTTP server
 - Ideal for testing business logic and API contracts
-- **Run with:** `pytest tests/test_api.py` or `pytest -k "not integration"`
+- **Run with:** `pytest tests/test_api.py` or
+  `pytest -k "not integration"`
 
 ```bash
 pytest tests/test_api.py
@@ -164,15 +184,18 @@ pytest tests/test_api.py
 ```
 
 #### Integration Tests (`tests/test_integration.py`)
+
 **Full end-to-end tests through Azure Functions runtime.**
 
 - Makes real HTTP requests to `http://localhost:7071`
 - Tests complete Azure Functions → ASGI → FastAPI integration
 - Requires Functions host running (`func start`)
 - Shows requests in Function logs
-- **Run with:** `pytest tests/test_integration.py` or `pytest -m integration`
+- **Run with:** `pytest tests/test_integration.py` or
+  `pytest -m integration`
 
 **Test against local Azure Functions:**
+
 ```bash
 # Terminal 1: Start Azure Functions
 func start
@@ -183,6 +206,7 @@ pytest -m integration
 ```
 
 **Test against deployed Azure Function:**
+
 ```bash
 # Set the Azure Function URL via environment variable
 FUNCTION_URL=https://your-app.azurewebsites.net pytest -m integration
@@ -193,6 +217,7 @@ pytest -m integration
 ```
 
 **Run all tests:**
+
 ```bash
 pytest  # Runs both unit and integration tests
 ```
@@ -221,15 +246,18 @@ az group delete --name agent-toolkit-citadel-spoke --yes --no-wait
 
 ### "403 Forbidden" during Function App creation
 
-**Cause**: Managed identity doesn't have required permissions on storage account
+**Cause**: Managed identity doesn't have required permissions on
+storage account
 
-**Solution**: Ensure Storage Blob Data Owner role is assigned before creating the Function App and wait 30 seconds for role propagation
+**Solution**: Ensure Storage Blob Data Owner role is assigned before creating
+the Function App and wait 30 seconds for role propagation
 
 ### Application Insights not showing logs
 
 **Cause**: Managed identity missing Monitoring Metrics Publisher role
 
 **Solution**: Assign the role:
+
 ```bash
 az role assignment create \
   --role "Monitoring Metrics Publisher" \
@@ -241,4 +269,5 @@ az role assignment create \
 
 **Cause**: Local Python version differs from Azure runtime (3.13)
 
-**Solution**: Create a virtual environment with Python 3.13 or update the runtime version in Azure to match your local version
+**Solution**: Create a virtual environment with Python 3.13 or update the
+runtime version in Azure to match your local version
