@@ -1,5 +1,7 @@
 # FastAPI on Azure Functions
 
+[![Deploy to Azure Functions](https://github.com/YOUR_USERNAME/fastapi-azure-functions/actions/workflows/azure-functions-deploy.yml/badge.svg)](https://github.com/YOUR_USERNAME/fastapi-azure-functions/actions/workflows/azure-functions-deploy.yml)
+
 This project demonstrates how to run a FastAPI application on Azure Functions
 with secure, keyless authentication using managed identities.
 
@@ -69,6 +71,18 @@ The `.funcignore` file ensures that only runtime code is deployed to Azure
    ```
 
 ## Deploy to Azure
+
+### GitHub Actions CI/CD (Recommended)
+
+Automatically deploy to Azure Functions on every push to `main` branch:
+
+1. **Setup OIDC Authentication**: Follow the comprehensive guide in [`.github/DEPLOYMENT_SETUP.md`](.github/DEPLOYMENT_SETUP.md)
+2. **Configure GitHub Secrets**: Add Azure credentials to your repository
+3. **Push to main**: Workflow automatically runs tests and deploys
+
+**Setup Time**: ~5 minutes | **Zero stored credentials** ✅
+
+See [GitHub Actions Setup Guide](.github/DEPLOYMENT_SETUP.md) for detailed instructions.
 
 ### Automated Deployment (Recommended)
 
