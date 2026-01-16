@@ -1,0 +1,55 @@
+### Environment Variables
+# Comment out one of the following to switch between environments
+
+# Local Development
+# @baseUrl = http://localhost:7071
+
+# Azure Function App
+@baseUrl = https://<function-name>.azurewebsites.net
+
+###
+
+### Test POST /helloUser endpoint
+POST {{baseUrl}}/api/helloUser
+Content-Type: application/json
+
+{
+  "name": "John"
+}
+
+###
+
+### Test POST /helloUser with different name
+POST {{baseUrl}}/api/helloUser
+Content-Type: application/json
+
+{
+  "name": "Alice"
+}
+
+###
+
+### Test POST /helloUser with invalid data (Pydantic validation)
+POST {{baseUrl}}/api/helloUser
+Content-Type: application/json
+
+{
+  "name": 12345
+}
+
+###
+
+### Test GET /api/omy endpoint (default)
+GET {{baseUrl}}/api/omy
+
+###
+
+### Test GET /api/omy with query parameter
+GET {{baseUrl}}/api/omy?name=Bob
+
+###
+
+### Test GET /api/docs (Swagger UI)
+GET {{baseUrl}}/api/docs
+
+###
