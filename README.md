@@ -82,7 +82,25 @@ Automatically deploy to Azure Functions on every push to `main` branch:
 
 **Setup Time**: ~5 minutes | **Zero stored credentials** ✅
 
-See [GitHub Actions Setup Guide](.github/DEPLOYMENT_SETUP.md) for detailed instructions.
+#### How It Works
+
+The GitHub Actions workflow (`.github/workflows/main_my-fastapi-func-sj.yml`):
+
+1. **Build Job**:
+   - Checks out code
+   - Sets up Python 3.13
+   - Zips source code (no dependencies installed)
+   - Uploads artifact
+
+2. **Deploy Job**:
+   - Downloads artifact
+   - Authenticates to Azure via OIDC (keyless)
+   - Deploys with `remote-build: true` parameter
+   - Azure builds dependencies using Oryx
+
+**Key Feature**: `remote-build: true` ensures dependencies are built in Azure's Linux environment, preventing platform compatibility issues and "BadGateway" errors.
+
+See [GitHub Actions Setup Guide](.github/DEPLOYMENT_SETUP.md) for detailed instructions and troubleshooting.
 
 ### Automated Deployment (Recommended)
 
@@ -278,6 +296,30 @@ az role assignment create \
   --assignee <managed-identity-principal-id> \
   --scope <app-insights-resource-id>
 ```
+
+### GitHub Actions deployment succeeds but function returns BadGateway
+
+**Cause**: Dependencies not installed on Azure (missing `remote-build: true`)
+
+**Solution**: Verify workflow file has:
+```yaml
+- name: 'Deploy to Azure Functions'
+  uses: Azure/functions-action@v1
+  with:
+    remote-build: true  # Required for Flex Consumption plan
+```
+
+**Verify in deployment logs**:
+- ✅ Should see: `Will use parameter remote-build: true`
+- ✅ Should see: `[Kudu-OryxBuildStep] starting/completed`
+- ❌ If missing, dependencies won't be installed
+
+**Why this matters**: 
+- Local deployment (`func azure functionapp publish`) uses remote build by default
+- GitHub Actions defaults to `remote-build: false` for Flex Consumption
+- Without remote build, Python packages aren't installed on Azure
+
+See [Deployment Setup Guide](.github/DEPLOYMENT_SETUP.md#critical-parameter-remote-build-true) for details.
 
 ### Local Python version mismatch
 

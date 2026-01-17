@@ -95,10 +95,112 @@ echo "======================================"
 
 | Secret Name | Value | Description |
 |-------------|-------|-------------|
-| `AZURE_CLIENT_ID` | From Step 4 above | Application (Client) ID |
-| `AZURE_TENANT_ID` | From Step 4 above | Azure AD Tenant ID |
-| `AZURE_SUBSCRIPTION_ID` | From Step 4 above | Azure Subscription ID |
-| `AZURE_FUNCTIONAPP_NAME` | Your function app name | e.g., `my-fastapi-func-sj` |
+| `AZUREAPPSERVICE_CLIENTID_*` | From Step 4 above | Application (Client) ID (auto-generated name) |
+| `AZUREAPPSERVICE_TENANTID_*` | From Step 4 above | Azure AD Tenant ID (auto-generated name) |
+| `AZUREAPPSERVICE_SUBSCRIPTIONID_*` | From Step 4 above | Azure Subscription ID (auto-generated name) |
+
+> **Note**: The secret names may have auto-generated suffixes when created via Azure portal deployment center. Use the exact names from your workflow file.
+
+## 📝 Understanding the GitHub Actions Workflow
+
+### Workflow File Structure
+
+The workflow (`.github/workflows/main_my-fastapi-func-sj.yml`) consists of two jobs:
+
+#### Job 1: Build
+```yaml
+build:
+  runs-on: ubuntu-latest
+  steps:
+    - Checkout repository
+    - Setup Python 3.13
+    - Zip source code only (no dependencies installed)
+    - Upload artifact
+```
+
+**Key Points:**
+- ✅ **No venv creation** - Dependencies are NOT installed locally
+- ✅ **Source code only** - Zips raw source files and `requirements.txt`
+- ✅ **Fast build** - No time wasted on dependency installation
+
+#### Job 2: Deploy
+```yaml
+deploy:
+  runs-on: ubuntu-latest
+  needs: build
+  steps:
+    - Download build artifact
+    - Login to Azure via OIDC
+    - Deploy to Azure Functions with remote-build: true
+```
+
+**Key Points:**
+- ✅ **OIDC Authentication** - Keyless, secure login using federated credentials
+- ✅ **Remote Build** - Dependencies built on Azure (not GitHub runner)
+- ✅ **Flex Consumption** - Optimized for Azure Functions Flex Consumption plan
+
+### Critical Parameter: `remote-build: true`
+
+```yaml
+- name: 'Deploy to Azure Functions'
+  uses: Azure/functions-action@v1
+  with:
+    app-name: 'my-fastapi-func-sj'
+    slot-name: 'Production'
+    package: ${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}
+    remote-build: true  # ⚠️ CRITICAL for Flex Consumption
+```
+
+#### Why `remote-build: true` is Essential:
+
+1. **Flex Consumption Plan Requirement**
+   - Flex Consumption plans default to `remote-build: false` in GitHub Actions
+   - Without `remote-build: true`, dependencies aren't installed on Azure
+   - Results in "BadGateway" errors when the function tries to load missing packages
+
+2. **Platform Compatibility**
+   - Python packages with C extensions (e.g., numpy, pandas) need Linux builds
+   - Building on GitHub's Ubuntu runner may create incompatible binaries
+   - Azure's Oryx build system ensures compatibility with Azure Functions runtime
+
+3. **Matches CLI Behavior**
+   - `func azure functionapp publish` uses remote build by default
+   - `remote-build: true` replicates this behavior in CI/CD
+
+4. **Build Process with Remote Build:**
+   ```
+   GitHub Actions → Upload source.zip → Azure Kudu Service → 
+   Oryx Build Engine → Install dependencies in Linux → 
+   Create deployment package → Deploy to Function App ✅
+   ```
+
+5. **Build Process WITHOUT Remote Build (❌ Causes Errors):**
+   ```
+   GitHub Actions → Upload source.zip → Azure Kudu Service → 
+   Deploy as-is (no dependency installation) → 
+   Function fails: "BadGateway" ❌
+   ```
+
+### Environment Variables
+
+```yaml
+env:
+  AZURE_FUNCTIONAPP_PACKAGE_PATH: '.'  # Deploy from repository root
+  PYTHON_VERSION: '3.13'                # Must match Azure runtime
+```
+
+### Deployment Logs
+
+During deployment, you'll see these Kudu pipeline steps:
+```
+[Kudu-ValidationStep] starting/completed
+[Kudu-ExtractZipStep] starting/completed
+[Kudu-OryxBuildStep] starting/completed  # ← Remote build happens here
+[Kudu-PackageZipStep] starting/completed
+[Kudu-UploadPackageStep] starting/completed
+```
+
+The `[Kudu-OryxBuildStep]` indicates Azure is building your dependencies remotely.
 
 ## ✅ Verify Setup
 
@@ -137,6 +239,26 @@ Replace `YOUR_USERNAME` with your GitHub username or organization name.
 
 ## 🔧 Troubleshooting
 
+### "BadGateway" Error After Successful Deployment
+
+**Symptoms**: GitHub Actions shows "Successfully deployed" but function returns BadGateway error in Azure portal
+
+**Cause**: Dependencies not installed on Azure (remote build disabled)
+
+**Solution**: Verify `remote-build: true` in workflow file:
+```yaml
+- name: 'Deploy to Azure Functions'
+  uses: Azure/functions-action@v1
+  with:
+    remote-build: true  # ← Must be present for Flex Consumption
+```
+
+**Check deployment logs** for:
+```
+✅ CORRECT: "Will use parameter remote-build: true"
+❌ WRONG:   "Will use parameter remote-build: false"
+```
+
 ### "Failed to login to Azure" Error
 - Verify federated credential subject matches exactly: `repo:ORG/REPO:ref:refs/heads/main`
 - Ensure role assignment propagated (wait 2-3 minutes after creation)
@@ -147,12 +269,18 @@ Replace `YOUR_USERNAME` with your GitHub username or organization name.
 - Check subscription ID is correct
 
 ### "Function app not found" Error
-- Verify `AZURE_FUNCTIONAPP_NAME` secret matches your actual function app name
+- Verify function app name in workflow matches actual Azure resource
 - Ensure function app exists in Azure
 
-### Tests Failing
-- Check test dependencies are in `requirements.txt`
-- Verify tests pass locally: `pytest -v`
+### "Oryx Build Failed" Error
+- Check `requirements.txt` has valid package names and versions
+- Verify Python version in workflow (`3.13`) matches Azure runtime
+- Review Kudu logs: `https://<app-name>.scm.azurewebsites.net/api/deployments`
+
+### Deployment Succeeds Locally but Fails in GitHub Actions
+- **Cause**: Local deployment (`func azure functionapp publish`) uses remote build by default
+- **Solution**: Ensure `remote-build: true` in GitHub Actions workflow
+- Compare deployment outputs - both should show `[Kudu-OryxBuildStep]` step
 
 ## 📚 Additional Resources
 
