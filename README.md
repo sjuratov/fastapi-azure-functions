@@ -1,6 +1,6 @@
 # FastAPI on Azure Functions
 
-[![Deploy to Azure Functions](https://github.com/YOUR_USERNAME/fastapi-azure-functions/actions/workflows/azure-functions-deploy.yml/badge.svg)](https://github.com/YOUR_USERNAME/fastapi-azure-functions/actions/workflows/azure-functions-deploy.yml)
+[![Build and deploy Python project to Azure Function App - my-fastapi-func-sj](https://github.com/sjuratov/fastapi-azure-functions/actions/workflows/main_my-fastapi-func-sj.yml/badge.svg)](https://github.com/sjuratov/fastapi-azure-functions/actions/workflows/main_my-fastapi-func-sj.yml)
 
 This project demonstrates how to run a FastAPI application on Azure Functions
 with secure, keyless authentication using managed identities.
