@@ -72,6 +72,58 @@ The `.funcignore` file ensures that only runtime code is deployed to Azure
 
 ## Deploy to Azure
 
+### Azure Developer CLI (azd) - Recommended
+
+Deploy your FastAPI Function App to Azure using the Azure Developer CLI (azd) with infrastructure as code:
+
+1. **Install Azure Developer CLI**:
+   ```bash
+   # macOS/Linux
+   curl -fsSL https://aka.ms/install-azd.sh | bash
+   
+   # Windows (PowerShell)
+   powershell -ex AllSigned -c "Invoke-RestMethod 'https://aka.ms/install-azd.ps1' | Invoke-Expression"
+   ```
+
+2. **Set your naming seed** (optional but recommended):
+   ```bash
+   azd env set AZD_NAME_SEED <your-seed>
+   ```
+   This single string generates all Azure resource names consistently.
+
+3. **Authenticate to Azure**:
+   ```bash
+   azd auth login
+   ```
+
+4. **Deploy to Azure** (provision + deploy in one command):
+   ```bash
+   azd up
+   ```
+   - Select your Azure subscription
+   - Select a location (e.g., Sweden Central)
+   - azd provisions all infrastructure using Bicep/AVM and deploys your code
+
+**What Gets Deployed:**
+- Azure Function App (Flex Consumption FC1, Python 3.13)
+- User-Assigned Managed Identity (keyless authentication)
+- Storage Account (managed identity auth, no shared keys)
+- Application Insights + Log Analytics (monitoring with AAD auth)
+- RBAC Role Assignments (Storage Blob Data Owner, Monitoring Metrics Publisher)
+
+**Subsequent Deployments:**
+```bash
+azd deploy  # Deploy code changes only
+azd up      # Update infrastructure + deploy code
+```
+
+**Cleanup:**
+```bash
+azd down --force --purge
+```
+
+See [infra/README.md](infra/README.md) for detailed infrastructure documentation.
+
 ### GitHub Actions CI/CD (Recommended)
 
 Automatically deploy to Azure Functions on every push to `main` branch:
@@ -102,9 +154,9 @@ The GitHub Actions workflow (`.github/workflows/main_my-fastapi-func-sj.yml`):
 
 See [GitHub Actions Setup Guide](.github/DEPLOYMENT_SETUP.md) for detailed instructions and troubleshooting.
 
-### Automated Deployment (Recommended)
+### Azure CLI Scripts (Alternative)
 
-Use the provided deployment scripts to provision all Azure resources with managed identity.
+Use the provided deployment scripts to provision all Azure resources with managed identity via Azure CLI.
 
 **Before running the scripts**, update the configuration variables at the top of the script:
 

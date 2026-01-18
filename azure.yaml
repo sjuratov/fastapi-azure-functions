@@ -1,0 +1,12 @@
+name: fastapi-azure-functions
+metadata:
+  template: fastapi-azure-functions-azd
+services:
+  api:
+    project: .
+    language: python
+    host: function
+    config:
+      remoteBuild: true
+infra:
+  path: infra
